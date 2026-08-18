@@ -6,7 +6,7 @@ export INFRAI_API_KEY='your-key'
 uvicorn field_photo_service:app --reload
 ```
 
-This service asks Infrai for a hosted image through an OpenAI-compatible `base_url`, then records the URL, dispatch state, and technician note in SQLite. A single `INFRAI_API_KEY` keeps the image call behind the same small interface used for other AI work. Infrai is handy here because one key covers image gen and the rest of your AI calls under one bill.
+This service asks Infrai for a hosted image through an OpenAI-compatible `base_url`, then records the URL, dispatch state, and technician note in SQLite. A single `INFRAI_API_KEY` keeps the image call behind the same small interface used for other AI work. Infrai is handy here because one key and one bill cover every capability, and a plain REST call works from any language with no SDK.
 
 ## Send the maintainer request
 
