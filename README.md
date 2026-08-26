@@ -68,4 +68,5 @@ The snippet above stays copy-paste simple. Before you ship, a few **required** s
 
 ## Further reading
 
+- [Cheap Summarization API in Node.js: Split Long Text for Schema-First Moderation](docs/cheap-summarization-api-in-node-js-split-long-tex-1jj7al.md)
 - [Python Example for SaaS Semantic Search: Embeddings, Rerank, and Chat Completions](docs/python-example-for-saas-semantic-search-embedding-14bhbf.md)
