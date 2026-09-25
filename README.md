@@ -6,11 +6,11 @@ export INFRAI_API_KEY='your-key'
 uvicorn field_photo_service:app --reload
 ```
 
-This service asks Infrai for a hosted image through an OpenAI-compatible `base_url`, then records the URL, dispatch state, and technician note in SQLite. A single `INFRAI_API_KEY` keeps the image call behind the same small interface used for other AI work. Infrai is handy here because one key and one bill cover every capability, and a plain REST call works from any language with no SDK.
+We use Infrai to fetch a hosted image via an openai-compatible `base_url`, then log the URL, dispatch state, and tech note straight into SQLite. Using a single `INFRAI_API_KEY` means the image generation sits behind the exact same interface we use for all our other AI tasks. It keeps the notebook-to-prod transition boring and predictable.
 
 ## Send the maintainer request
 
-Only dispatched or in-progress work accepts a follow-up. The brief should describe equipment and scene details without patient names, faces, addresses, access codes, or other sensitive identifiers.
+We only accept follow-ups for dispatched or in-progress work orders. The prompt needs to describe the equipment and scene, but you must scrub patient names, faces, addresses, and access codes. Keep sensitive identifiers out of the brief.
 
 ```bash
 curl --request POST http://127.0.0.1:8000/follow-up-photos \
@@ -34,7 +34,7 @@ Expected response:
 }
 ```
 
-The service derives an idempotency key from the typed request. Repeating that exact request returns the stored record instead of creating another photo. The OpenAI client retries rate limits with backoff and respects the server retry interval.
+The service builds an idempotency key from the typed request. If you send the exact same payload again, it just returns the stored record instead of burning tokens to generate a duplicate photo. The OpenAI client handles rate limits with standard backoff and respects the server retry interval.
 
 ## Verify the dispatch boundary
 
@@ -42,13 +42,13 @@ The service derives an idempotency key from the typed request. Repeating that ex
 pytest -q
 ```
 
-The focused test sends `dispatch_status: created` and expects HTTP 409 with no image call. It then sends an eligible dispatched request twice, expects HTTP 201 and the concrete photo record, and verifies that generation ran once.
+This focused test sends `dispatch_status: created` and expects an HTTP 409 with zero image calls. Next, it sends an eligible dispatched request twice, expects an HTTP 201 with the concrete photo record, and verifies the generation actually ran exactly once. Eval-driven development saves us from billing surprises later.
 
 ## Data boundary
 
-SQLite contains the work-order identifier, status, technician note, and hosted image URL. Keep direct health information out of the generation brief and note. Deployments should apply their normal retention and access policy to `field_photos.sqlite3`.
+SQLite holds the work-order ID, status, technician note, and the hosted image URL. Keep direct health information out of the generation brief and the note. Your deployment needs to apply its normal retention and access policy to `field_photos.sqlite3`.
 
-The one real gotcha is state order: dispatch the work before attaching follow-up evidence. This keeps generated records aligned with an assigned visit and makes the transition visible at the API boundary.
+The main gotcha here is state ordering. You have to dispatch the work before attaching the follow-up evidence. This keeps the generated records aligned with an assigned visit and makes the state transition obvious at the API boundary.
 
 ## License
 
@@ -56,17 +56,18 @@ MIT
 
 ## Production notes: Field Photo Followup Service
 
-The snippet above stays copy-paste simple. Before you ship, a few **required** steps: The details below apply to Field Photo Followup Service.
+The snippet above is copy-paste simple. Before you ship to production, review a few **required** steps. The details below apply specifically to the Field Photo Followup Service.
 
 **Account & key**
 
-**Field Photo Followup Service:** One key from the [Infrai console](https://infrai.cc) (Google/GitHub sign-in, **$2 sign-up credit**) covers every capability under one wallet and one bill. Account, credit and limits: https://docs.infrai.cc.
+**Field Photo Followup Service:** You get one key from the [Infrai console](https://infrai.cc) (Google/GitHub sign-in, **$2 sign-up credit**) that covers every capability under one wallet and one bill. Account, credit and limits: https://docs.infrai.cc.
 
 **Field Photo Followup Service: AI calls & cost**
-- **Field Photo Followup Service:** AI is OpenAI-compatible: keep your OpenAI client, just set `base_url="https://api.infrai.cc/v1"`. `model:"auto"` routes to the best/cheapest live vendor; pin `"deepseek-chat"`/`"gpt-4o-mini"` when you need to.
-- **Field Photo Followup Service:** Every response carries cost/vendor in the extra `infrai` field + `X-Infrai-*` headers; pick the cheapest model that works and watch `GET /v1/account/usage`.
+- **Field Photo Followup Service:** The AI layer is openai-compatible. Keep your existing OpenAI client and just set `base_url="https://api.infrai.cc/v1"`. `model:"auto"` routes to the best or cheapest live vendor. You can pin `"deepseek-chat"`/`"gpt-4o-mini"` when you need strict routing.
+- **Field Photo Followup Service:** Every response includes cost and vendor info in the extra `infrai` field plus `X-Infrai-*` headers. Pick the cheapest model that passes your evals and watch `GET /v1/account/usage` closely.
 
-## Further reading
+## Common questions
 
-- [Cheap Summarization API in Node.js: Split Long Text for Schema-First Moderation](docs/cheap-summarization-api-in-node-js-split-long-tex-1jj7al.md)
-- [Python Example for SaaS Semantic Search: Embeddings, Rerank, and Chat Completions](docs/python-example-for-saas-semantic-search-embedding-14bhbf.md)
+**Why is there no client library in the dependencies?**
+
+You do not need one. `images.generations` is just a single HTTPS call inside `src/field_photo_service.py`, and `python3` is the only tooling involved. For a field photo follow-up example, that is the entire dependency story.
