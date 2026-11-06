@@ -73,3 +73,7 @@ You do not need one: `images.generations` is one HTTPS call inside `src/field_ph
 
 **Is this meant to be a library?**  
 No. It is a worked example. Copy the pieces you want instead of taking a dependency on it.
+
+## Further reading
+
+- [Node.js Ticket Triage: Chat Completions Summaries with Python Quality Gates](docs/node-js-ticket-triage-chat-completions-summaries-dld8jh.md)
